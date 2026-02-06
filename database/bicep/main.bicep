@@ -1,5 +1,5 @@
 param environment string = 'dev'
-param location string = resourceGroup().location
+param location string = 'centralus'
 param adminPassword string
 
 var uniqueSuffix = uniqueString(resourceGroup().id)

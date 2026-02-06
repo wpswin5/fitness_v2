@@ -40,6 +40,7 @@ jobs:
           --resource-group $AZURE_RESOURCE_GROUP \
           --template-file bicep/main.bicep \
           --parameters environment=${{ github.event.inputs.environment || 'dev' }} \
+          --parameters location='centralus' \
           --parameters adminPassword='${{ secrets.DB_ADMIN_PASSWORD }}'
     
     - name: Get Database Credentials
