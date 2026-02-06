@@ -18,18 +18,18 @@ var environmentConfig = {
   }
 }
 
-var config = environmentConfig[Environment]
+var config = environmentConfig[environment]
 
 resource sqlServer 'Microsoft.Sql/servers@2021-08-01-preview' = {
-  name: 'sqlsrv-fitness-${Environment}-${uniqueSuffix}'
-  location: Location
-  properties: {
-    administratorLogin: 'sqladmin'
-    administratorLoginPassenvironment}-${uniqueSuffix}'
+  name: 'sqlsrv-fitness-${environment}-${uniqueSuffix}'
   location: location
   properties: {
     administratorLogin: 'sqladmin'
     administratorLoginPassword: adminPassword
+    version: '12.0'
+  }
+}
+
 resource sqlDatabase 'Microsoft.Sql/servers/databases@2021-08-01-preview' = {
   parent: sqlServer
   name: 'fitnessdb-${environment}'

@@ -39,8 +39,8 @@ jobs:
         az deployment group create \
           --resource-group $AZURE_RESOURCE_GROUP \
           --template-file bicep/main.bicep \
-          --parameters bicep/parameters.json \
-          --parameters Environment=${{ github.event.inputs.environment || 'dev' }}
+          --parameters environment=${{ github.event.inputs.environment || 'dev' }} \
+          --parameters adminPassword='${{ secrets.DB_ADMIN_PASSWORD }}'
     
     - name: Get Database Credentials
       id: db-info
