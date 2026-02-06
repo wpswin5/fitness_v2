@@ -94,6 +94,8 @@ jobs:
     
     - name: Deploy to Azure Container Instances
       run: |
+        az container delete --resource-group $AZURE_RESOURCE_GROUP --name fitness-api-${{ github.event.inputs.environment || 'dev' }} --yes || true
+        
         az container create \
           --resource-group $AZURE_RESOURCE_GROUP \
           --name fitness-api-${{ github.event.inputs.environment || 'dev' }} \
@@ -106,6 +108,8 @@ jobs:
           --memory 1 \
           --port 8000 \
           --protocol TCP \
+          --ip-address Public \
+          --dns-name-label fitness-api-${{ github.event.inputs.environment || 'dev' }} \
           --environment-variables \
             DB_SERVER=${{ secrets.DB_SERVER }} \
             DB_NAME=${{ secrets.DB_NAME }} \
