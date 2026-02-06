@@ -101,7 +101,11 @@ jobs:
           --registry-login-server $REGISTRY \
           --registry-username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
           --registry-password ${{ secrets.AZURE_REGISTRY_PASSWORD }} \
+          --os-type Linux \
+          --cpu 1 \
+          --memory 1 \
           --port 8000 \
+          --protocol TCP \
           --environment-variables \
             DB_SERVER=${{ secrets.DB_SERVER }} \
             DB_NAME=${{ secrets.DB_NAME }} \
