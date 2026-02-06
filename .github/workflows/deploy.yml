@@ -33,25 +33,13 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
-    - name: Deploy Database Infrastructure
-      working-directory: ./database
-      run: |
-        az deployment group create \
-          --resource-group $AZURE_RESOURCE_GROUP \
-          --template-file bicep/main.bicep \
-          --parameters environment=${{ github.event.inputs.environment || 'dev' }} \
-          --parameters location='centralus' \
-          --parameters adminPassword='${{ secrets.DB_ADMIN_PASSWORD }}'
-    
-    - name: Get Database Credentials
+    - name: Get Database Server Info
       id: db-info
       run: |
-        # Retrieve connection info from Azure
-        DB_SERVER=$(az sql server list --resource-group $AZURE_RESOURCE_GROUP --query "[0].fullyQualifiedDomainName" -o tsv)
+        # Use existing database credentials from secrets
+        echo "db_server=${{ secrets.DB_SERVER }}" >> $GITHUB_OUTPUT
         ENVIRONMENT=${{ github.event.inputs.environment || 'dev' }}
-        DB_NAME="fitnessdb-${ENVIRONMENT}"
-        echo "db_server=$DB_SERVER" >> $GITHUB_OUTPUT
-        echo "db_name=$DB_NAME" >> $GITHUB_OUTPUT
+        echo "db_name=fitnessdb-${ENVIRONMENT}" >> $GITHUB_OUTPUT
     
     - name: Run Database Migrations
       working-directory: ./database/scripts
@@ -61,10 +49,10 @@ jobs:
         sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17
         
         # Run migrations using sqlcmd
-        for file in ${{ steps.db-info.outputs.db_name }}/*.sql; do
+        for file in ../migrations/*.sql; do
           echo "Running migration: $file"
           sqlcmd -S ${{ steps.db-info.outputs.db_server }} \
-                 -d fitnessdb-dev \
+                 -d ${{ steps.db-info.outputs.db_name }} \
                  -U ${{ secrets.DB_ADMIN_USER }} \
                  -P ${{ secrets.DB_ADMIN_PASSWORD }} \
                  -i "$file"
