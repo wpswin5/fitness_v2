@@ -109,8 +109,8 @@ jobs:
           --environment-variables \
             DB_SERVER=${{ secrets.DB_SERVER }} \
             DB_NAME=${{ secrets.DB_NAME }} \
-            DB_USER=${{ secrets.DB_USER }} \
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            DB_USER=${{ secrets.DB_ADMIN_USER }} \
+            DB_PASSWORD=${{ secrets.DB_ADMIN_PASSWORD }} \
             AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }} \
           --restart-policy OnFailure
     
