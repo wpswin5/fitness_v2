@@ -1,0 +1,118 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  REGISTRY: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
+  IMAGE_NAME: fitness-api
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+jobs:
+  deploy-db:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy Database Infrastructure
+      working-directory: ./database
+      run: |
+        az deployment group create \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --template-file bicep/main.bicep \
+          --parameters bicep/parameters.json \
+          --parameters Environment=${{ github.event.inputs.environment || 'dev' }}
+    
+    - name: Get Database Credentials
+      id: db-info
+      run: |
+        # Retrieve connection info from Azure
+        DB_SERVER=$(az sql server list --resource-group $AZURE_RESOURCE_GROUP --query "[0].fullyQualifiedDomainName" -o tsv)
+        ENVIRONMENT=${{ github.event.inputs.environment || 'dev' }}
+        DB_NAME="fitnessdb-${ENVIRONMENT}"
+        echo "db_server=$DB_SERVER" >> $GITHUB_OUTPUT
+        echo "db_name=$DB_NAME" >> $GITHUB_OUTPUT
+    
+    - name: Run Database Migrations
+      working-directory: ./database/scripts
+      run: |
+        # Install ODBC drivers
+        sudo apt-get update
+        sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17
+        
+        # Run migrations using sqlcmd
+        for file in ${{ steps.db-info.outputs.db_name }}/*.sql; do
+          echo "Running migration: $file"
+          sqlcmd -S ${{ steps.db-info.outputs.db_server }} \
+                 -d fitnessdb-dev \
+                 -U ${{ secrets.DB_ADMIN_USER }} \
+                 -P ${{ secrets.DB_ADMIN_PASSWORD }} \
+                 -i "$file"
+        done
+
+  build-and-push:
+    needs: deploy-db
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Build and Push Docker Image
+      working-directory: ./app
+      run: |
+        az acr build \
+          --registry ${{ secrets.AZURE_REGISTRY_NAME }} \
+          --image $IMAGE_NAME:${{ github.sha }} \
+          --image $IMAGE_NAME:latest \
+          --file Dockerfile .
+    
+    - name: Deploy to Azure Container Instances
+      run: |
+        az container create \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --name fitness-api-${{ github.event.inputs.environment || 'dev' }} \
+          --image $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
+          --registry-login-server $REGISTRY \
+          --registry-username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
+          --registry-password ${{ secrets.AZURE_REGISTRY_PASSWORD }} \
+          --port 8000 \
+          --environment-variables \
+            DB_SERVER=${{ secrets.DB_SERVER }} \
+            DB_NAME=${{ secrets.DB_NAME }} \
+            DB_USER=${{ secrets.DB_USER }} \
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+          --restart-policy OnFailure
+    
+    - name: Deployment Summary
+      if: success()
+      run: |
+        echo "Deployment completed successfully!"
+        echo "Container: fitness-api-${{ github.event.inputs.environment || 'dev' }}"
+        echo "Image: $REGISTRY/$IMAGE_NAME:${{ github.sha }}"
