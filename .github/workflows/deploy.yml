@@ -15,8 +15,8 @@ on:
           - prod
 
 env:
-  REGISTRY: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
-  IMAGE_NAME: fitness-api
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/fitness-api
   AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
   CONTAINER_APP_ENVIRONMENT: fitness-env
   CONTAINER_APP_NAME: fitness-api
@@ -86,13 +86,15 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
     - name: Build and Push Docker Image
-      working-directory: ./app
-      run: |
-        az acr build \
-          --registry ${{ secrets.AZURE_REGISTRY_NAME }} \
-          --image $IMAGE_NAME:${{ github.sha }} \
-          --image $IMAGE_NAME:latest \
-          --file Dockerfile .
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
     
     - name: Create Container Apps Environment (if needed)
       run: |
@@ -118,10 +120,7 @@ jobs:
           --name $APP_NAME \
           --resource-group $AZURE_RESOURCE_GROUP \
           --environment $CONTAINER_APP_ENVIRONMENT \
-          --image $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
-          --registry-server $REGISTRY \
-          --registry-username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
-          --registry-password ${{ secrets.AZURE_REGISTRY_PASSWORD }} \
+          --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
           --target-port 8000 \
           --ingress external \
           --min-replicas 1 \
@@ -138,7 +137,7 @@ jobs:
         az containerapp update \
           --name $APP_NAME \
           --resource-group $AZURE_RESOURCE_GROUP \
-          --image $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
+          --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
           --query properties.configuration.ingress.fqdn -o tsv
     
     - name: Deployment Summary
