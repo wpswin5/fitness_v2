@@ -18,6 +18,8 @@ env:
   REGISTRY: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
   IMAGE_NAME: fitness-api
   AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  CONTAINER_APP_ENVIRONMENT: fitness-env
+  CONTAINER_APP_NAME: fitness-api
 
 jobs:
   deploy-db:
@@ -92,35 +94,60 @@ jobs:
           --image $IMAGE_NAME:latest \
           --file Dockerfile .
     
-    - name: Deploy to Azure Container Instances
+    - name: Create Container Apps Environment (if needed)
       run: |
-        az container delete --resource-group $AZURE_RESOURCE_GROUP --name fitness-api-${{ github.event.inputs.environment || 'dev' }} --yes || true
+        # Check if environment exists
+        ENV_EXISTS=$(az containerapp env list --resource-group $AZURE_RESOURCE_GROUP --query "[?name=='$CONTAINER_APP_ENVIRONMENT'].id" -o tsv)
         
-        az container create \
+        if [ -z "$ENV_EXISTS" ]; then
+          echo "Creating Container Apps environment..."
+          az containerapp env create \
+            --name $CONTAINER_APP_ENVIRONMENT \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --location eastus2
+        else
+          echo "Container Apps environment already exists"
+        fi
+    
+    - name: Deploy to Azure Container Apps
+      run: |
+        ENV=${{ github.event.inputs.environment || 'dev' }}
+        APP_NAME="${CONTAINER_APP_NAME}-${ENV}"
+        
+        az containerapp create \
+          --name $APP_NAME \
           --resource-group $AZURE_RESOURCE_GROUP \
-          --name fitness-api-${{ github.event.inputs.environment || 'dev' }} \
+          --environment $CONTAINER_APP_ENVIRONMENT \
           --image $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
-          --registry-login-server $REGISTRY \
+          --registry-server $REGISTRY \
           --registry-username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
           --registry-password ${{ secrets.AZURE_REGISTRY_PASSWORD }} \
-          --os-type Linux \
-          --cpu 1 \
-          --memory 1 \
-          --port 8000 \
-          --protocol TCP \
-          --ip-address Public \
-          --dns-name-label fitness-api-${{ github.event.inputs.environment || 'dev' }} \
-          --environment-variables \
+          --target-port 8000 \
+          --ingress external \
+          --min-replicas 1 \
+          --max-replicas 3 \
+          --cpu 0.5 \
+          --memory 1.0Gi \
+          --env-vars \
             DB_SERVER=${{ secrets.DB_SERVER }} \
-            DB_NAME=${{ secrets.DB_NAME }} \
+            DB_NAME=fitnessdb-${ENV} \
             DB_USER=${{ secrets.DB_ADMIN_USER }} \
             DB_PASSWORD=${{ secrets.DB_ADMIN_PASSWORD }} \
             AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }} \
-          --restart-policy OnFailure
+          --query properties.configuration.ingress.fqdn -o tsv 2>/dev/null || \
+        az containerapp update \
+          --name $APP_NAME \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --image $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
+          --query properties.configuration.ingress.fqdn -o tsv
     
     - name: Deployment Summary
       if: success()
       run: |
+        ENV=${{ github.event.inputs.environment || 'dev' }}
+        APP_NAME="${CONTAINER_APP_NAME}-${ENV}"
         echo "Deployment completed successfully!"
-        echo "Container: fitness-api-${{ github.event.inputs.environment || 'dev' }}"
+        echo "Container App: $APP_NAME"
         echo "Image: $REGISTRY/$IMAGE_NAME:${{ github.sha }}"
+        FQDN=$(az containerapp show --name $APP_NAME --resource-group $AZURE_RESOURCE_GROUP --query properties.configuration.ingress.fqdn -o tsv)
+        echo "URL: https://$FQDN"
