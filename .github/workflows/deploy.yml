@@ -43,8 +43,7 @@ jobs:
         ENVIRONMENT=${{ github.event.inputs.environment || 'dev' }}
         echo "db_name=fitnessdb-${ENVIRONMENT}" >> $GITHUB_OUTPUT
     
-    - name: Run Database Migrations
-      working-directory: ./database/scripts
+    - name: Initialize Database Schema
       run: |
         # Install dependencies and ODBC drivers
         sudo apt-get update
@@ -61,15 +60,15 @@ jobs:
         # Add tools to PATH
         export PATH=$PATH:/opt/mssql-tools18/bin
         
-        # Run migrations using sqlcmd
-        for file in ../migrations/*.sql; do
-          echo "Running migration: $file"
-          sqlcmd -S ${{ steps.db-info.outputs.db_server }} \
-                 -d ${{ steps.db-info.outputs.db_name }} \
-                 -U ${{ secrets.DB_ADMIN_USER }} \
-                 -P ${{ secrets.DB_ADMIN_PASSWORD }} \
-                 -i "$file"
-        done
+        # Make schema initialization script executable
+        chmod +x database/scripts/init-schema.sh
+        
+        # Run schema initialization
+        database/scripts/init-schema.sh \
+          "${{ steps.db-info.outputs.db_server }}" \
+          "${{ steps.db-info.outputs.db_name }}" \
+          "${{ secrets.DB_ADMIN_USER }}" \
+          "${{ secrets.DB_ADMIN_PASSWORD }}"
 
   build-and-push:
     needs: deploy-db

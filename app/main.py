@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-from src.api import health, fitness
+from src.api import health, fitness, test
 from src.config import settings
 
 # Configure logging
@@ -31,6 +31,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(fitness.router, prefix="/api/v1", tags=["Fitness"])
+app.include_router(test.router, prefix="/api/v1", tags=["Test"])
 
 @app.on_event("startup")
 async def startup_event():
