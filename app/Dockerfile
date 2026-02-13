@@ -3,9 +3,15 @@ FROM python:3.11-slim as builder
 
 WORKDIR /tmp
 
-# Install system dependencies for pyodbc
+# Install system dependencies for pyodbc and SQL Server driver
 RUN apt-get update && apt-get install -y --no-install-recommends \
     unixodbc-dev \
+    curl \
+    gnupg \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -16,9 +22,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install ODBC runtime libraries
+# Install ODBC runtime libraries and SQL Server driver
 RUN apt-get update && apt-get install -y --no-install-recommends \
     unixodbc \
+    curl \
+    gnupg \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python dependencies from builder
