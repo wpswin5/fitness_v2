@@ -12,7 +12,7 @@ BEGIN
         [ProgramId] UNIQUEIDENTIFIER NULL,
         [StartTime] DATETIME2 NOT NULL,
         [EndTime] DATETIME2 NULL,
-        [TotalDurationMinutes] AS DATEDIFF(MINUTE, [StartTime], [EndTime]) PERSISTED,
+        [TotalDurationMinutes] AS DATEDIFF(MINUTE, [StartTime], [EndTime]),
         [Notes] NVARCHAR(MAX),
         [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
         CONSTRAINT [FK_WorkoutLogs_Users] FOREIGN KEY ([UserId]) 
