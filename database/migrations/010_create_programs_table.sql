@@ -17,14 +17,17 @@ BEGIN
         CONSTRAINT [FK_Programs_Users] FOREIGN KEY ([CreatorId]) 
             REFERENCES [dbo].[Users]([UserId]) ON DELETE CASCADE
     );
-
-    CREATE INDEX [IX_Programs_CreatorId] ON [dbo].[Programs]([CreatorId]);
-    CREATE INDEX [IX_Programs_IsShared] ON [dbo].[Programs]([IsShared]) WHERE [IsShared] = 1;
-
     PRINT 'Programs table created';
 END
 ELSE
 BEGIN
     PRINT 'Programs table already exists';
 END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Programs_CreatorId' AND object_id = OBJECT_ID('dbo.Programs'))
+    CREATE INDEX [IX_Programs_CreatorId] ON [dbo].[Programs]([CreatorId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Programs_IsShared' AND object_id = OBJECT_ID('dbo.Programs'))
+    CREATE INDEX [IX_Programs_IsShared] ON [dbo].[Programs]([IsShared]);
 

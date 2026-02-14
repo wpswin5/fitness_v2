@@ -20,16 +20,23 @@ BEGIN
         CONSTRAINT [FK_SetLogs_Exercises] FOREIGN KEY ([ExerciseId]) 
             REFERENCES [dbo].[Exercises]([ExerciseId]) ON DELETE NO ACTION
     );
-
-    CREATE INDEX [IX_SetLogs_WorkoutLogId] ON [dbo].[SetLogs]([WorkoutLogId]);
-    CREATE INDEX [IX_SetLogs_OriginalSetId] ON [dbo].[SetLogs]([OriginalSetId]);
-    CREATE INDEX [IX_SetLogs_ExerciseId] ON [dbo].[SetLogs]([ExerciseId]);
-    CREATE INDEX [IX_SetLogs_WorkoutLogId_SetOrder] ON [dbo].[SetLogs]([WorkoutLogId], [SetOrder], [SetNumber]);
-
     PRINT 'SetLogs table created';
 END
 ELSE
 BEGIN
     PRINT 'SetLogs table already exists';
 END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetLogs_WorkoutLogId' AND object_id = OBJECT_ID('dbo.SetLogs'))
+    CREATE INDEX [IX_SetLogs_WorkoutLogId] ON [dbo].[SetLogs]([WorkoutLogId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetLogs_OriginalSetId' AND object_id = OBJECT_ID('dbo.SetLogs'))
+    CREATE INDEX [IX_SetLogs_OriginalSetId] ON [dbo].[SetLogs]([OriginalSetId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetLogs_ExerciseId' AND object_id = OBJECT_ID('dbo.SetLogs'))
+    CREATE INDEX [IX_SetLogs_ExerciseId] ON [dbo].[SetLogs]([ExerciseId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetLogs_WorkoutLogId_SetOrder' AND object_id = OBJECT_ID('dbo.SetLogs'))
+    CREATE INDEX [IX_SetLogs_WorkoutLogId_SetOrder] ON [dbo].[SetLogs]([WorkoutLogId], [SetOrder], [SetNumber]);
 

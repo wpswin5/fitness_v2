@@ -16,14 +16,23 @@ BEGIN
         CONSTRAINT [FK_Workouts_Users] FOREIGN KEY ([CreatorId]) 
             REFERENCES [dbo].[Users]([UserId]) ON DELETE CASCADE
     );
-
-    CREATE INDEX [IX_Workouts_CreatorId] ON [dbo].[Workouts]([CreatorId]);
-    CREATE INDEX [IX_Workouts_IsShared] ON [dbo].[Workouts]([IsShared]) WHERE [IsShared] = 1;
-
     PRINT 'Workouts table created';
 END
 ELSE
 BEGIN
     PRINT 'Workouts table already exists';
+END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Workouts_CreatorId' AND object_id = OBJECT_ID('dbo.Workouts'))
+BEGIN
+    CREATE INDEX [IX_Workouts_CreatorId] ON [dbo].[Workouts]([CreatorId]);
+    PRINT 'Index IX_Workouts_CreatorId created';
+END
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Workouts_IsShared' AND object_id = OBJECT_ID('dbo.Workouts'))
+BEGIN
+    CREATE INDEX [IX_Workouts_IsShared] ON [dbo].[Workouts]([IsShared]);
+    PRINT 'Index IX_Workouts_IsShared created';
 END
 

@@ -16,4 +16,4 @@ CREATE TABLE [dbo].[Programs] (
 
 -- Create indexes
 CREATE INDEX [IX_Programs_CreatorId] ON [dbo].[Programs]([CreatorId]);
-CREATE INDEX [IX_Programs_IsShared] ON [dbo].[Programs]([IsShared]) WHERE [IsShared] = 1;
+CREATE INDEX [IX_Programs_IsShared] ON [dbo].[Programs]([IsShared]);

@@ -20,15 +20,20 @@ BEGIN
         CONSTRAINT [FK_Sets_Exercises] FOREIGN KEY ([ExerciseId]) 
             REFERENCES [dbo].[Exercises]([ExerciseId]) ON DELETE NO ACTION
     );
-
-    CREATE INDEX [IX_Sets_WorkoutId] ON [dbo].[Sets]([WorkoutId]);
-    CREATE INDEX [IX_Sets_ExerciseId] ON [dbo].[Sets]([ExerciseId]);
-    CREATE UNIQUE INDEX [IX_Sets_WorkoutId_SetOrder] ON [dbo].[Sets]([WorkoutId], [SetOrder]);
-
     PRINT 'Sets table created';
 END
 ELSE
 BEGIN
     PRINT 'Sets table already exists';
 END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Sets_WorkoutId' AND object_id = OBJECT_ID('dbo.Sets'))
+    CREATE INDEX [IX_Sets_WorkoutId] ON [dbo].[Sets]([WorkoutId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Sets_ExerciseId' AND object_id = OBJECT_ID('dbo.Sets'))
+    CREATE INDEX [IX_Sets_ExerciseId] ON [dbo].[Sets]([ExerciseId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Sets_WorkoutId_SetOrder' AND object_id = OBJECT_ID('dbo.Sets'))
+    CREATE UNIQUE INDEX [IX_Sets_WorkoutId_SetOrder] ON [dbo].[Sets]([WorkoutId], [SetOrder]);
 

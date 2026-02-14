@@ -17,14 +17,17 @@ BEGIN
         [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
         CONSTRAINT [UQ_Exercises_Name] UNIQUE ([Name])
     );
-
-    CREATE INDEX [IX_Exercises_PrimaryMuscleGroup] ON [dbo].[Exercises]([PrimaryMuscleGroup]);
-    CREATE INDEX [IX_Exercises_DifficultyLevel] ON [dbo].[Exercises]([DifficultyLevel]);
-
     PRINT 'Exercises table created';
 END
 ELSE
 BEGIN
     PRINT 'Exercises table already exists';
 END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Exercises_PrimaryMuscleGroup' AND object_id = OBJECT_ID('dbo.Exercises'))
+    CREATE INDEX [IX_Exercises_PrimaryMuscleGroup] ON [dbo].[Exercises]([PrimaryMuscleGroup]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Exercises_DifficultyLevel' AND object_id = OBJECT_ID('dbo.Exercises'))
+    CREATE INDEX [IX_Exercises_DifficultyLevel] ON [dbo].[Exercises]([DifficultyLevel]);
 

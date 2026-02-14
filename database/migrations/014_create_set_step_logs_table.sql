@@ -21,15 +21,20 @@ BEGIN
         CONSTRAINT [FK_SetStepLogs_SetSteps] FOREIGN KEY ([OriginalSetStepId]) 
             REFERENCES [dbo].[SetSteps]([SetStepId]) ON DELETE NO ACTION
     );
-
-    CREATE INDEX [IX_SetStepLogs_SetLogId] ON [dbo].[SetStepLogs]([SetLogId]);
-    CREATE INDEX [IX_SetStepLogs_OriginalSetStepId] ON [dbo].[SetStepLogs]([OriginalSetStepId]);
-    CREATE UNIQUE INDEX [IX_SetStepLogs_SetLogId_StepOrder] ON [dbo].[SetStepLogs]([SetLogId], [StepOrder]);
-
     PRINT 'SetStepLogs table created';
 END
 ELSE
 BEGIN
     PRINT 'SetStepLogs table already exists';
 END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetStepLogs_SetLogId' AND object_id = OBJECT_ID('dbo.SetStepLogs'))
+    CREATE INDEX [IX_SetStepLogs_SetLogId] ON [dbo].[SetStepLogs]([SetLogId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetStepLogs_OriginalSetStepId' AND object_id = OBJECT_ID('dbo.SetStepLogs'))
+    CREATE INDEX [IX_SetStepLogs_OriginalSetStepId] ON [dbo].[SetStepLogs]([OriginalSetStepId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetStepLogs_SetLogId_StepOrder' AND object_id = OBJECT_ID('dbo.SetStepLogs'))
+    CREATE UNIQUE INDEX [IX_SetStepLogs_SetLogId_StepOrder] ON [dbo].[SetStepLogs]([SetLogId], [StepOrder]);
 

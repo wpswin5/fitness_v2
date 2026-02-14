@@ -16,14 +16,17 @@ BEGIN
         CONSTRAINT [FK_SetSteps_Sets] FOREIGN KEY ([SetId]) 
             REFERENCES [dbo].[Sets]([SetId]) ON DELETE CASCADE
     );
-
-    CREATE INDEX [IX_SetSteps_SetId] ON [dbo].[SetSteps]([SetId]);
-    CREATE UNIQUE INDEX [IX_SetSteps_SetId_StepOrder] ON [dbo].[SetSteps]([SetId], [StepOrder]);
-
     PRINT 'SetSteps table created';
 END
 ELSE
 BEGIN
     PRINT 'SetSteps table already exists';
 END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetSteps_SetId' AND object_id = OBJECT_ID('dbo.SetSteps'))
+    CREATE INDEX [IX_SetSteps_SetId] ON [dbo].[SetSteps]([SetId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SetSteps_SetId_StepOrder' AND object_id = OBJECT_ID('dbo.SetSteps'))
+    CREATE UNIQUE INDEX [IX_SetSteps_SetId_StepOrder] ON [dbo].[SetSteps]([SetId], [StepOrder]);
 

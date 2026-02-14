@@ -63,3 +63,13 @@ ELSE
 BEGIN
     PRINT 'Users table already has correct schema';
 END
+
+-- Ensure indexes exist (idempotent fallback)
+IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Users')
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Users_Email' AND object_id = OBJECT_ID('dbo.Users'))
+        CREATE INDEX [IX_Users_Email] ON [dbo].[Users]([Email]);
+    
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Users_Auth0Sub' AND object_id = OBJECT_ID('dbo.Users'))
+        CREATE INDEX [IX_Users_Auth0Sub] ON [dbo].[Users]([Auth0Sub]);
+END

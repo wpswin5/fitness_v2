@@ -23,14 +23,17 @@ BEGIN
             ([IsRestDay] = 0 AND [WorkoutId] IS NOT NULL)
         )
     );
-
-    CREATE INDEX [IX_ProgramWorkouts_WorkoutId] ON [dbo].[ProgramWorkouts]([WorkoutId]);
-    CREATE INDEX [IX_ProgramWorkouts_ProgramId_WeekNumber] ON [dbo].[ProgramWorkouts]([ProgramId], [WeekNumber]);
-
     PRINT 'ProgramWorkouts table created';
 END
 ELSE
 BEGIN
     PRINT 'ProgramWorkouts table already exists';
 END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ProgramWorkouts_WorkoutId' AND object_id = OBJECT_ID('dbo.ProgramWorkouts'))
+    CREATE INDEX [IX_ProgramWorkouts_WorkoutId] ON [dbo].[ProgramWorkouts]([WorkoutId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ProgramWorkouts_ProgramId_WeekNumber' AND object_id = OBJECT_ID('dbo.ProgramWorkouts'))
+    CREATE INDEX [IX_ProgramWorkouts_ProgramId_WeekNumber] ON [dbo].[ProgramWorkouts]([ProgramId], [WeekNumber]);
 

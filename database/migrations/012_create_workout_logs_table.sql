@@ -22,17 +22,26 @@ BEGIN
         CONSTRAINT [FK_WorkoutLogs_Programs] FOREIGN KEY ([ProgramId]) 
             REFERENCES [dbo].[Programs]([ProgramId]) ON DELETE NO ACTION
     );
-
-    CREATE INDEX [IX_WorkoutLogs_UserId] ON [dbo].[WorkoutLogs]([UserId]);
-    CREATE INDEX [IX_WorkoutLogs_OriginalWorkoutId] ON [dbo].[WorkoutLogs]([OriginalWorkoutId]);
-    CREATE INDEX [IX_WorkoutLogs_ProgramId] ON [dbo].[WorkoutLogs]([ProgramId]);
-    CREATE INDEX [IX_WorkoutLogs_StartTime] ON [dbo].[WorkoutLogs]([StartTime] DESC);
-    CREATE INDEX [IX_WorkoutLogs_UserId_StartTime] ON [dbo].[WorkoutLogs]([UserId], [StartTime] DESC);
-
     PRINT 'WorkoutLogs table created';
 END
 ELSE
 BEGIN
     PRINT 'WorkoutLogs table already exists';
 END
+
+-- Create indexes (idempotent)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_WorkoutLogs_UserId' AND object_id = OBJECT_ID('dbo.WorkoutLogs'))
+    CREATE INDEX [IX_WorkoutLogs_UserId] ON [dbo].[WorkoutLogs]([UserId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_WorkoutLogs_OriginalWorkoutId' AND object_id = OBJECT_ID('dbo.WorkoutLogs'))
+    CREATE INDEX [IX_WorkoutLogs_OriginalWorkoutId] ON [dbo].[WorkoutLogs]([OriginalWorkoutId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_WorkoutLogs_ProgramId' AND object_id = OBJECT_ID('dbo.WorkoutLogs'))
+    CREATE INDEX [IX_WorkoutLogs_ProgramId] ON [dbo].[WorkoutLogs]([ProgramId]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_WorkoutLogs_StartTime' AND object_id = OBJECT_ID('dbo.WorkoutLogs'))
+    CREATE INDEX [IX_WorkoutLogs_StartTime] ON [dbo].[WorkoutLogs]([StartTime] DESC);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_WorkoutLogs_UserId_StartTime' AND object_id = OBJECT_ID('dbo.WorkoutLogs'))
+    CREATE INDEX [IX_WorkoutLogs_UserId_StartTime] ON [dbo].[WorkoutLogs]([UserId], [StartTime] DESC);
 

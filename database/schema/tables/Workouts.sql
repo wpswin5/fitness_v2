@@ -15,4 +15,4 @@ CREATE TABLE [dbo].[Workouts] (
 
 -- Create indexes
 CREATE INDEX [IX_Workouts_CreatorId] ON [dbo].[Workouts]([CreatorId]);
-CREATE INDEX [IX_Workouts_IsShared] ON [dbo].[Workouts]([IsShared]) WHERE [IsShared] = 1;
+CREATE INDEX [IX_Workouts_IsShared] ON [dbo].[Workouts]([IsShared]);
