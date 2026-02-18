@@ -22,6 +22,12 @@ A modern FastAPI service for fitness tracking with Azure SQL Database backend, d
 cd app
 python3 -m venv venv
 source venv/bin/activate
+
+# macOS SQL Server ODBC runtime (required for pyodbc)
+brew install unixodbc
+brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+brew install msodbcsql17 mssql-tools
+
 pip install -r requirements.txt
 
 # Configure
