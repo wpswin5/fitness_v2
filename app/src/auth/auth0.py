@@ -8,6 +8,7 @@ from typing import Optional
 
 import requests
 from jose import JWTError, jwt
+from jose.exceptions import JWTClaimsError
 from datetime import datetime, timedelta
 
 from src.config import settings
@@ -112,6 +113,11 @@ class Auth0Manager:
             # Get public key for this token
             public_key = self.get_public_key(token)
             
+            # Decode without verification first to log claims for debugging
+            unverified_payload = jwt.get_unverified_claims(token)
+            logger.debug(f"Token claims (unverified): aud={unverified_payload.get('aud')}, iss={unverified_payload.get('iss')}, sub={unverified_payload.get('sub')}")
+            logger.debug(f"Expected audience: {self.audience}, Expected issuer: {self.issuer}")
+            
             # Verify and decode token
             payload = jwt.decode(
                 token,
@@ -127,6 +133,10 @@ class Auth0Manager:
             logger.info(f"Token verified for user: {token_payload.sub}")
             return token_payload
             
+        except JWTClaimsError as e:
+            logger.error(f"Token claims validation failed: {str(e)}")
+            logger.error(f"Expected audience: {self.audience}, Expected issuer: {self.issuer}")
+            raise
         except JWTError as e:
             logger.error(f"Token verification failed: {str(e)}")
             raise

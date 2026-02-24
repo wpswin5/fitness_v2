@@ -10,6 +10,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from src.auth.auth0 import auth0_manager
 from src.auth.models import UserContext, TokenPayload
 from jose import JWTError
+from jose.exceptions import JWTClaimsError
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,13 @@ async def get_current_user(
         logger.info(f"User authenticated: {user_context.auth0_sub}")
         return user_context
         
+    except JWTClaimsError as e:
+        logger.warning(f"Token claims invalid: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token claims",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
     except JWTError as e:
         logger.warning(f"Invalid token: {str(e)}")
         raise HTTPException(
