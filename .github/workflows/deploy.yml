@@ -120,7 +120,8 @@ jobs:
         ENV=${{ github.event.inputs.environment || 'dev' }}
         APP_NAME="${CONTAINER_APP_NAME}-${ENV}"
         
-        az containerapp create \
+        # Try to create the container app first
+        if az containerapp create \
           --name $APP_NAME \
           --resource-group $AZURE_RESOURCE_GROUP \
           --environment $CONTAINER_APP_ENVIRONMENT \
@@ -136,13 +137,30 @@ jobs:
             DB_NAME=fitnessdb-${ENV} \
             DB_USER=${{ secrets.DB_ADMIN_USER }} \
             DB_PASSWORD=${{ secrets.DB_ADMIN_PASSWORD }} \
+            AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }} \
+            AUTH0_API_AUDIENCE=${{ secrets.AUTH0_API_AUDIENCE }} \
+            AUTH0_CLIENT_ID_WEB=${{ secrets.AUTH0_CLIENT_ID_WEB }} \
+            AUTH0_CLIENT_SECRET_WEB=${{ secrets.AUTH0_CLIENT_SECRET_WEB }} \
             AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }} \
-          --query properties.configuration.ingress.fqdn -o tsv 2>/dev/null || \
-        az containerapp update \
-          --name $APP_NAME \
-          --resource-group $AZURE_RESOURCE_GROUP \
-          --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-          --query properties.configuration.ingress.fqdn -o tsv
+          --query properties.configuration.ingress.fqdn -o tsv 2>/dev/null; then
+          echo "Container app created successfully"
+        else
+          echo "Container app already exists, updating..."
+          az containerapp update \
+            --name $APP_NAME \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --set-env-vars \
+              DB_SERVER=${{ secrets.DB_SERVER }} \
+              DB_NAME=fitnessdb-${ENV} \
+              DB_USER=${{ secrets.DB_ADMIN_USER }} \
+              DB_PASSWORD=${{ secrets.DB_ADMIN_PASSWORD }} \
+              AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }} \
+              AUTH0_API_AUDIENCE=${{ secrets.AUTH0_API_AUDIENCE }} \
+              AUTH0_CLIENT_ID_WEB=${{ secrets.AUTH0_CLIENT_ID_WEB }} \
+              AUTH0_CLIENT_SECRET_WEB=${{ secrets.AUTH0_CLIENT_SECRET_WEB }} \
+              AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        fi
     
     - name: Deployment Summary
       if: success()

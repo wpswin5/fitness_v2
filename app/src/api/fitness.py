@@ -33,12 +33,10 @@ async def get_workout_logs(user: UserContext = Depends(get_current_user)):
         query = """
         SELECT wl.WorkoutLogId, wl.StartTime, wl.EndTime, wl.TotalDurationMinutes, wl.Notes
         FROM [dbo].[WorkoutLogs] wl
-        JOIN [dbo].[Users] u ON wl.UserId = u.UserId
-        WHERE u.Auth0Sub = ?
         ORDER BY wl.StartTime DESC
         """
         
-        results = execute_query(query, (user.auth0_sub,))
+        results = execute_query(query, ())
         
         if not results:
             return []
@@ -57,7 +55,7 @@ async def get_workout_logs(user: UserContext = Depends(get_current_user)):
         return sessions
         
     except Exception as e:
-        logger.error(f"Error fetching workout logs for user {user.auth0_sub}: {str(e)}")
+        logger.error(f"Error fetching workout logs: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch workout logs",

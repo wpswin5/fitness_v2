@@ -22,6 +22,12 @@ class Auth0Manager:
     
     def __init__(self):
         self.domain = settings.AUTH0_DOMAIN
+        if not self.domain:
+            logger.error("AUTH0_DOMAIN environment variable is not set")
+            raise ValueError(
+                "AUTH0_DOMAIN environment variable is required but not set. "
+                "Make sure to set this in your Docker environment variables or .env file."
+            )
         self.audience = settings.AUTH0_API_AUDIENCE or f"https://{self.domain}/api/v2/"
         self.issuer = f"https://{self.domain}/"
         self.jwks_client = None
