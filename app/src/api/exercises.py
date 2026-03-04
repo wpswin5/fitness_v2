@@ -34,14 +34,34 @@ def _resolve_user_id(user: UserContext, db: Session) -> uuid.UUID:
 
 
 def _to_response(e) -> ExerciseResponse:
+    # Safely convert muscle group to enum, handling invalid values
+    muscle_group = None
+    if e.primary_muscle_group:
+        muscle_group_lower = e.primary_muscle_group.lower()
+        try:
+            muscle_group = MuscleGroup(muscle_group_lower)
+        except ValueError:
+            # Invalid muscle group in database, set to None
+            muscle_group = None
+    
+    # Safely convert difficulty level to enum, handling invalid values
+    difficulty = None
+    if e.difficulty_level:
+        difficulty_lower = e.difficulty_level.lower()
+        try:
+            difficulty = DifficultyLevel(difficulty_lower)
+        except ValueError:
+            # Invalid difficulty level in database, set to None
+            difficulty = None
+    
     return ExerciseResponse(
         exercise_id=e.exercise_id,
         creator_id=e.creator_id,
         name=e.name,
         description=e.description,
         equipment_required=e.equipment_required.split(",") if e.equipment_required else None,
-        primary_muscle_group=e.primary_muscle_group.lower() if e.primary_muscle_group else None,
-        difficulty_level=e.difficulty_level.lower() if e.difficulty_level else None,
+        primary_muscle_group=muscle_group,
+        difficulty_level=difficulty,
         instructions=e.instructions,
         created_at=e.created_at,
     )
