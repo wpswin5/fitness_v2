@@ -21,8 +21,7 @@ class SetStepBase(DBModelBase):
     planned_reps: int = Field(..., ge=1, description="Target reps for this step")
     planned_weight: Optional[Decimal] = Field(
         None, 
-        ge=0, 
-        decimal_places=2,
+        ge=0,
         description="Target weight in lbs/kg (null for bodyweight)"
     )
 
@@ -144,6 +143,7 @@ class WorkoutInDB(WorkoutBase, TimestampMixin):
     """Workout as stored in the database."""
     workout_id: UUID = Field(..., description="Unique workout identifier")
     creator_id: UUID = Field(..., description="User who created this workout")
+    deleted_at: Optional[datetime] = Field(None, description="Soft delete timestamp")
 
 
 class WorkoutResponse(WorkoutBase):

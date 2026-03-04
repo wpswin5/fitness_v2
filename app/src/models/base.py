@@ -18,6 +18,11 @@ class CreatedAtMixin(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class SoftDeleteMixin(BaseModel):
+    """Mixin for models that support soft deletion."""
+    deleted_at: Optional[datetime] = Field(default=None, description="Soft delete timestamp (null = active)")
+
+
 class DBModelBase(BaseModel):
     """Base class for all database models with common config."""
     model_config = ConfigDict(

@@ -116,6 +116,7 @@ class ProgramInDB(ProgramBase, TimestampMixin):
     """Program as stored in the database."""
     program_id: UUID = Field(..., description="Unique program identifier")
     creator_id: UUID = Field(..., description="User who created this program")
+    deleted_at: Optional[datetime] = Field(None, description="Soft delete timestamp")
 
 
 class ProgramResponse(ProgramBase):

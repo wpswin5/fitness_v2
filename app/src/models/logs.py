@@ -22,7 +22,6 @@ class SetStepLogBase(DBModelBase):
     completed_weight: Optional[Decimal] = Field(
         None, 
         ge=0,
-        decimal_places=2,
         description="Actual weight used"
     )
     completed_time_seconds: Optional[int] = Field(

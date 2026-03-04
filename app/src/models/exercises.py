@@ -55,7 +55,7 @@ class ExerciseBase(DBModelBase):
 
 
 class ExerciseCreate(ExerciseBase):
-    """Schema for creating a new exercise."""
+    """Schema for creating a new exercise. creator_id is set from the authenticated user."""
     pass
 
 
@@ -72,11 +72,14 @@ class ExerciseUpdate(DBModelBase):
 class ExerciseInDB(ExerciseBase, TimestampMixin):
     """Exercise as stored in the database."""
     exercise_id: UUID = Field(..., description="Unique exercise identifier")
+    creator_id: Optional[UUID] = Field(None, description="User who created this exercise (null = system/admin)")
+    deleted_at: Optional[datetime] = Field(None, description="Soft delete timestamp")
 
 
 class ExerciseResponse(ExerciseBase):
     """Exercise response returned to clients."""
     exercise_id: UUID = Field(..., description="Unique exercise identifier")
+    creator_id: Optional[UUID] = Field(None, description="User who created this exercise (null = system/admin)")
     created_at: datetime
 
 

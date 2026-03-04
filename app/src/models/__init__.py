@@ -5,6 +5,7 @@ This module provides all data models organized by domain:
 - exercises: Master exercise definitions
 - workouts: Workout templates, sets, and set steps
 - programs: Training programs and scheduling
+- program_assignments: Program enrollment and progress tracking
 - logs: Workout logging and performance tracking
 """
 
@@ -13,6 +14,7 @@ from .base import (
     DBModelBase,
     TimestampMixin,
     CreatedAtMixin,
+    SoftDeleteMixin,
 )
 
 # User models
@@ -83,11 +85,28 @@ from .logs import (
     WorkoutStats,
 )
 
+# Program assignment and progress models
+from .program_assignments import (
+    AssignmentStatus,
+    WorkoutLogStatus,
+    ProgramWorkoutLogCreate,
+    ProgramWorkoutLogUpdate,
+    ProgramWorkoutLogInDB,
+    ProgramWorkoutLogResponse,
+    UserProgramAssignmentCreate,
+    UserProgramAssignmentUpdate,
+    UserProgramAssignmentInDB,
+    UserProgramAssignmentResponse,
+    UserProgramAssignmentSummary,
+    ProgramProgress,
+)
+
 __all__ = [
     # Base
     "DBModelBase",
     "TimestampMixin",
     "CreatedAtMixin",
+    "SoftDeleteMixin",
     # Users
     "UserCreate",
     "UserUpdate",
@@ -147,4 +166,17 @@ __all__ = [
     # Analytics
     "ExercisePerformance",
     "WorkoutStats",
+    # Program Assignments
+    "AssignmentStatus",
+    "WorkoutLogStatus",
+    "ProgramWorkoutLogCreate",
+    "ProgramWorkoutLogUpdate",
+    "ProgramWorkoutLogInDB",
+    "ProgramWorkoutLogResponse",
+    "UserProgramAssignmentCreate",
+    "UserProgramAssignmentUpdate",
+    "UserProgramAssignmentInDB",
+    "UserProgramAssignmentResponse",
+    "UserProgramAssignmentSummary",
+    "ProgramProgress",
 ]
