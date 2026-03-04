@@ -2,6 +2,10 @@
 -- Version: 015
 -- Description: Add test user, exercises, workout, and related data for testing
 
+-- Required for DML on tables with filtered indexes (added in migration 020)
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+
 -- Declare variables for test user
 DECLARE @TestUserId UNIQUEIDENTIFIER = NEWID();
 DECLARE @TestAuth0Sub NVARCHAR(255) = 'auth0|test-user-seed';

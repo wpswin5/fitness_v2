@@ -4,6 +4,10 @@
 -- Description: Add test program, program workouts, user program assignment,
 --              and program workout logs for testing progress tracking.
 
+-- Required for DML on tables with filtered indexes (added in migration 020)
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+
 -- Get existing test user
 DECLARE @TestUserId UNIQUEIDENTIFIER;
 DECLARE @TestAuth0Sub NVARCHAR(255) = 'auth0|test-user-seed';
