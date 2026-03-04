@@ -16,6 +16,9 @@ from src.models.logs import (
     WorkoutLogCreate,
     WorkoutLogUpdate,
     SetLogCreate,
+    SetLogUpdate,
+    SetStepLogCreate,
+    SetStepLogUpdate,
 )
 from src.repositories.base import BaseRepository
 
@@ -144,3 +147,65 @@ class LogRepository(BaseRepository[WorkoutLog]):
         self.db.flush()
         self.db.refresh(set_log)
         return set_log
+
+    # -- set log CRUD -------------------------------------------------------
+
+    def get_set_log(self, set_log_id: uuid.UUID) -> Optional[SetLog]:
+        """Get a single set log with its step logs."""
+        stmt = (
+            select(SetLog)
+            .options(selectinload(SetLog.step_logs))
+            .where(SetLog.set_log_id == set_log_id)
+        )
+        return self.db.execute(stmt).scalars().first()
+
+    def update_set_log(self, set_log: SetLog, data) -> SetLog:
+        """Update set log fields."""
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(set_log, field, value)
+        self.db.flush()
+        self.db.refresh(set_log)
+        return set_log
+
+    def delete_set_log(self, set_log: SetLog) -> None:
+        """Delete a set log (and cascade to step logs)."""
+        self.db.delete(set_log)
+        self.db.flush()
+
+    # -- step log CRUD ------------------------------------------------------
+
+    def get_step_log(self, step_log_id: uuid.UUID) -> Optional[SetStepLog]:
+        """Get a single step log."""
+        stmt = select(SetStepLog).where(SetStepLog.set_step_log_id == step_log_id)
+        return self.db.execute(stmt).scalars().first()
+
+    def update_step_log(self, step_log: SetStepLog, data) -> SetStepLog:
+        """Update step log fields."""
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(step_log, field, value)
+        self.db.flush()
+        self.db.refresh(step_log)
+        return step_log
+
+    def delete_step_log(self, step_log: SetStepLog) -> None:
+        """Delete a step log."""
+        self.db.delete(step_log)
+        self.db.flush()
+    def create_step_log(self, set_log_id: uuid.UUID, data: SetStepLogCreate) -> SetStepLog:
+        """Create a new step log for an existing set log."""
+        step_log = SetStepLog(
+            set_log_id=set_log_id,
+            original_set_step_id=data.original_set_step_id,
+            step_order=data.step_order,
+            completed_reps=data.completed_reps,
+            completed_weight=data.completed_weight,
+            completed_time_seconds=data.completed_time_seconds,
+            rest_time_after_seconds=data.rest_time_after_seconds,
+            notes=data.notes,
+        )
+        self.db.add(step_log)
+        self.db.flush()
+        self.db.refresh(step_log)
+        return step_log

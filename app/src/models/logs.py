@@ -45,6 +45,16 @@ class SetStepLogCreate(SetStepLogBase):
     )
 
 
+class SetStepLogUpdate(DBModelBase):
+    """Schema for updating a set step log."""
+    step_order: Optional[int] = Field(None, ge=1)
+    completed_reps: Optional[int] = Field(None, ge=0)
+    completed_weight: Optional[Decimal] = Field(None, ge=0)
+    completed_time_seconds: Optional[int] = Field(None, ge=0)
+    rest_time_after_seconds: Optional[int] = Field(None, ge=0)
+    notes: Optional[str] = None
+
+
 class SetStepLogInDB(SetStepLogBase, CreatedAtMixin):
     """Set step log as stored in the database."""
     set_step_log_id: UUID
@@ -79,6 +89,13 @@ class SetLogCreate(SetLogBase):
         default_factory=list,
         description="Logged steps within this set"
     )
+
+
+class SetLogUpdate(DBModelBase):
+    """Schema for updating a set log."""
+    set_order: Optional[int] = Field(None, ge=1)
+    exercise_id: Optional[UUID] = None
+    set_number: Optional[int] = Field(None, ge=1)
 
 
 class SetLogInDB(SetLogBase, CreatedAtMixin):

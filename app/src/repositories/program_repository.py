@@ -268,3 +268,28 @@ class ProgramAssignmentRepository(BaseRepository[UserProgramAssignment]):
             "skipped": row.skipped,
             "pending": row.pending,
         }
+
+    # -- program workout log CRUD -------------------------------------------
+
+    def get_program_workout_log(
+        self, log_id: uuid.UUID
+    ) -> Optional[ProgramWorkoutLog]:
+        """Get a single program workout log."""
+        stmt = select(ProgramWorkoutLog).where(
+            ProgramWorkoutLog.program_workout_log_id == log_id
+        )
+        return self.db.execute(stmt).scalars().first()
+
+    def update_program_workout_log(
+        self, log_id: uuid.UUID, data: ProgramWorkoutLogUpdate
+    ) -> Optional[ProgramWorkoutLog]:
+        """Update a program workout log (status, notes, completed_at)."""
+        log = self.get_program_workout_log(log_id)
+        if log is None:
+            return None
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(log, field, value)
+        self.db.flush()
+        self.db.refresh(log)
+        return log

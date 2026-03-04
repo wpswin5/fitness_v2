@@ -70,9 +70,11 @@ from .programs import (
 # Log models
 from .logs import (
     SetStepLogCreate,
+    SetStepLogUpdate,
     SetStepLogInDB,
     SetStepLogResponse,
     SetLogCreate,
+    SetLogUpdate,
     SetLogInDB,
     SetLogResponse,
     SetLogSummary,
@@ -150,10 +152,12 @@ __all__ = [
     "ProgramSummary",
     # SetStepLogs
     "SetStepLogCreate",
+    "SetStepLogUpdate",
     "SetStepLogInDB",
     "SetStepLogResponse",
     # SetLogs
     "SetLogCreate",
+    "SetLogUpdate",
     "SetLogInDB",
     "SetLogResponse",
     "SetLogSummary",

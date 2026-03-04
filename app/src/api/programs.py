@@ -277,6 +277,38 @@ def get_assignment_progress(
     )
 
 
+@router.patch("/programs/assignments/{assignment_id}/logs/{log_id}", response_model=ProgramWorkoutLogResponse)
+def update_program_workout_log(
+    assignment_id: uuid.UUID,
+    log_id: uuid.UUID,
+    data: ProgramWorkoutLogUpdate,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Mark a scheduled workout as complete, skipped, or update notes."""
+    user_id = _resolve_user_id(user, db)
+    repo = ProgramAssignmentRepository(db)
+    assignment = repo.get_by_id(assignment_id)
+    if assignment is None or assignment.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+    
+    updated_log = repo.update_program_workout_log(log_id, data)
+    if updated_log is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program workout log not found")
+    
+    return ProgramWorkoutLogResponse(
+        program_workout_log_id=updated_log.program_workout_log_id,
+        assignment_id=updated_log.assignment_id,
+        week_number=updated_log.week_number,
+        day_of_week=updated_log.day_of_week,
+        status=updated_log.status,
+        scheduled_date=updated_log.scheduled_date,
+        workout_log_id=updated_log.workout_log_id,
+        completed_at=updated_log.completed_at,
+        notes=updated_log.notes,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

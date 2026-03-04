@@ -17,6 +17,8 @@ from src.models.workouts import (
     WorkoutResponse,
     WorkoutSummary,
     WorkoutUpdate,
+    SetCreate,
+    SetUpdate,
     SetResponse,
     SetStepResponse,
 )
@@ -27,7 +29,10 @@ from src.models.logs import (
     WorkoutLogSummary,
     WorkoutLogUpdate,
     SetLogCreate,
+    SetLogUpdate,
     SetLogResponse,
+    SetStepLogCreate,
+    SetStepLogUpdate,
     SetStepLogResponse,
 )
 from src.repositories.user_repository import UserRepository
@@ -313,3 +318,225 @@ def finish_workout_log(
     updated = repo.finish_workout(log, data)
     return _log_to_response(updated)
 
+
+# ---------------------------------------------------------------------------
+# Nested CRUD: Workout Sets
+# ---------------------------------------------------------------------------
+
+@router.post("/workouts/{workout_id}/sets", response_model=SetResponse)
+def create_workout_set(
+    workout_id: uuid.UUID,
+    data: SetCreate,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a new set within a workout template."""
+    user_id = _resolve_user_id(user, db)
+    repo = WorkoutRepository(db)
+    
+    # Verify ownership
+    workout = repo.get_by_id(workout_id)
+    if workout is None or workout.creator_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout not found")
+    
+    set_obj = repo.create_set(workout_id, data, user_id)
+    return SetResponse.model_validate(set_obj)
+
+
+@router.patch("/workouts/{workout_id}/sets/{set_id}", response_model=SetResponse)
+def update_workout_set(
+    workout_id: uuid.UUID,
+    set_id: uuid.UUID,
+    data: SetUpdate,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update a set within a workout template."""
+    user_id = _resolve_user_id(user, db)
+    repo = WorkoutRepository(db)
+    
+    # Verify ownership
+    workout = repo.get_by_id(workout_id)
+    if workout is None or workout.creator_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout not found")
+    
+    # Fetch the set
+    set_obj = repo.get_set(set_id)
+    if set_obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Set not found")
+    
+    updated_set = repo.update_set(set_obj, data)
+    return SetResponse.model_validate(updated_set)
+
+
+@router.delete("/workouts/{workout_id}/sets/{set_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_workout_set(
+    workout_id: uuid.UUID,
+    set_id: uuid.UUID,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a set from a workout template."""
+    user_id = _resolve_user_id(user, db)
+    repo = WorkoutRepository(db)
+    
+    # Verify ownership
+    workout = repo.get_by_id(workout_id)
+    if workout is None or workout.creator_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout not found")
+    
+    # Fetch the set
+    set_obj = repo.get_set(set_id)
+    if set_obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Set not found")
+    
+    repo.delete_set(set_obj)
+
+
+
+# ---------------------------------------------------------------------------
+# Nested CRUD: Workout Log Sets & Steps
+# ---------------------------------------------------------------------------
+
+@router.post("/workouts/logs/{log_id}/sets", response_model=SetLogResponse)
+def add_set_log(
+    log_id: uuid.UUID,
+    data: SetLogCreate,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Add a set log mid-workout (reuse from template or create inline)."""
+    user_id = _resolve_user_id(user, db)
+    repo = LogRepository(db)
+    
+    # Verify ownership
+    log = repo.get_with_tree(log_id)
+    if log is None or log.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout log not found")
+    
+    set_log = repo.add_set_log(log_id, data)
+    return SetLogResponse.model_validate(set_log)
+
+
+
+@router.patch("/workouts/logs/{log_id}/sets/{set_log_id}", response_model=SetLogResponse)
+def update_set_log(
+    log_id: uuid.UUID,
+    set_log_id: uuid.UUID,
+    data: SetLogUpdate,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update a set log during/after workout."""
+    user_id = _resolve_user_id(user, db)
+    repo = LogRepository(db)
+    
+    # Verify ownership
+    log = repo.get_with_tree(log_id)
+    if log is None or log.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout log not found")
+    
+    # Fetch the set log
+    set_log = repo.get_set_log(set_log_id)
+    if set_log is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Set log not found")
+    
+    updated_set_log = repo.update_set_log(set_log, data)
+    return SetLogResponse.model_validate(updated_set_log)
+
+
+@router.delete("/workouts/logs/{log_id}/sets/{set_log_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_set_log(
+    log_id: uuid.UUID,
+    set_log_id: uuid.UUID,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove a set log from a workout."""
+    user_id = _resolve_user_id(user, db)
+    repo = LogRepository(db)
+    
+    # Verify ownership
+    log = repo.get_with_tree(log_id)
+    if log is None or log.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout log not found")
+    
+    # Fetch the set log
+    set_log = repo.get_set_log(set_log_id)
+    if set_log is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Set log not found")
+    
+    repo.delete_set_log(set_log)
+
+
+@router.post("/workouts/logs/{log_id}/sets/{set_log_id}/steps", response_model=SetStepLogResponse)
+def add_step_log(
+    log_id: uuid.UUID,
+    set_log_id: uuid.UUID,
+    data: SetStepLogCreate,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Add a step log to a set log during/after workout."""
+    user_id = _resolve_user_id(user, db)
+    repo = LogRepository(db)
+    
+    # Verify ownership
+    log = repo.get_with_tree(log_id)
+    if log is None or log.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout log not found")
+    
+    step_log = repo.create_step_log(set_log_id, data)
+    return SetStepLogResponse.model_validate(step_log)
+
+
+@router.patch("/workouts/logs/{log_id}/sets/{set_log_id}/steps/{step_log_id}", response_model=SetStepLogResponse)
+def update_step_log(
+    log_id: uuid.UUID,
+    set_log_id: uuid.UUID,
+    step_log_id: uuid.UUID,
+    data: SetStepLogUpdate,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update a step log during/after workout."""
+    user_id = _resolve_user_id(user, db)
+    repo = LogRepository(db)
+    
+    # Verify ownership
+    log = repo.get_with_tree(log_id)
+    if log is None or log.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout log not found")
+    
+    # Fetch the step log
+    step_log = repo.get_step_log(step_log_id)
+    if step_log is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step log not found")
+    
+    updated_step_log = repo.update_step_log(step_log, data)
+    return SetStepLogResponse.model_validate(updated_step_log)
+
+
+@router.delete("/workouts/logs/{log_id}/sets/{set_log_id}/steps/{step_log_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_step_log(
+    log_id: uuid.UUID,
+    set_log_id: uuid.UUID,
+    step_log_id: uuid.UUID,
+    user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove a step log from a set log."""
+    user_id = _resolve_user_id(user, db)
+    repo = LogRepository(db)
+    
+    # Verify ownership
+    log = repo.get_with_tree(log_id)
+    if log is None or log.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout log not found")
+    
+    # Fetch the step log
+    step_log = repo.get_step_log(step_log_id)
+    if step_log is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step log not found")
+    
+    repo.delete_step_log(step_log)
