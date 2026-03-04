@@ -5,10 +5,10 @@ from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from .base import DBModelBase, TimestampMixin
-from .exercises import ExerciseSummary
+from .exercises import ExerciseCreate, ExerciseSummary
 
 
 # ============================================================================
@@ -56,18 +56,40 @@ class SetStepResponse(SetStepBase):
 class SetBase(DBModelBase):
     """Base set fields."""
     set_order: int = Field(..., ge=1, description="Order within the workout (1, 2, 3...)")
-    exercise_id: UUID = Field(..., description="Reference to the exercise")
+    exercise_id: Optional[UUID] = Field(None, description="Reference to an existing exercise")
     num_sets: int = Field(default=1, ge=1, description="Number of times to perform this set")
     rest_seconds: Optional[int] = Field(None, ge=0, description="Rest time between sets in seconds")
     notes: Optional[str] = Field(None, description="Notes for this set")
 
 
 class SetCreate(SetBase):
-    """Schema for creating a set with its steps."""
+    """Schema for creating a set with its steps.
+
+    Exercise resolution:
+      • If ``exercise_id`` is provided, the existing exercise is used.
+      • If ``new_exercise`` is provided instead, a new exercise is created
+        on-the-fly and its generated ID is used.
+      • Exactly one of the two must be supplied (validated below).
+    """
+    new_exercise: Optional[ExerciseCreate] = Field(
+        None,
+        description="Inline exercise creation payload (alternative to exercise_id)",
+    )
     steps: List[SetStepCreate] = Field(
         default_factory=list,
         description="Rep/weight steps within this set"
     )
+
+    @model_validator(mode="after")
+    def validate_exercise_source(self) -> "SetCreate":
+        """Ensure exactly one of exercise_id or new_exercise is set."""
+        has_id = self.exercise_id is not None
+        has_new = self.new_exercise is not None
+        if has_id == has_new:
+            raise ValueError(
+                "Provide exactly one of 'exercise_id' (existing) or 'new_exercise' (create new), not both/neither."
+            )
+        return self
 
     @field_validator('steps')
     @classmethod
@@ -98,9 +120,14 @@ class SetInDB(SetBase, TimestampMixin):
     workout_id: UUID = Field(..., description="Parent workout identifier")
 
 
-class SetResponse(SetBase):
-    """Set response with nested steps."""
+class SetResponse(DBModelBase):
+    """Set response with nested steps (exercise_id always resolved)."""
     set_id: UUID
+    set_order: int = Field(..., ge=1)
+    exercise_id: UUID = Field(..., description="Resolved exercise reference")
+    num_sets: int = Field(default=1, ge=1)
+    rest_seconds: Optional[int] = Field(None, ge=0)
+    notes: Optional[str] = None
     steps: List[SetStepResponse] = Field(default_factory=list)
     exercise: Optional[ExerciseSummary] = None  # Populated when joined
 
