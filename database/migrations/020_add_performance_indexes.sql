@@ -5,6 +5,10 @@
 --              Covers: active record filtering, user content lookups, exercise search,
 --              log history queries, and program progress lookups.
 
+-- Required for filtered indexes on SQL Server
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+
 -- ============================================================================
 -- Filtered indexes for active (non-deleted) records
 -- These are the most common queries - almost all reads exclude deleted items
