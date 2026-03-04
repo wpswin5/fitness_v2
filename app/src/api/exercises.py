@@ -40,8 +40,8 @@ def _to_response(e) -> ExerciseResponse:
         name=e.name,
         description=e.description,
         equipment_required=e.equipment_required.split(",") if e.equipment_required else None,
-        primary_muscle_group=e.primary_muscle_group,
-        difficulty_level=e.difficulty_level,
+        primary_muscle_group=e.primary_muscle_group.lower() if e.primary_muscle_group else None,
+        difficulty_level=e.difficulty_level.lower() if e.difficulty_level else None,
         instructions=e.instructions,
         created_at=e.created_at,
     )
@@ -54,8 +54,8 @@ def _to_response(e) -> ExerciseResponse:
 @router.get("/exercises", response_model=List[ExerciseResponse])
 def search_exercises(
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
-    muscle_group: Optional[MuscleGroup] = Query(None),
-    difficulty: Optional[DifficultyLevel] = Query(None),
+    muscle_group: Optional[str] = Query(None, description="Filter by muscle group"),
+    difficulty: Optional[str] = Query(None, description="Filter by difficulty level"),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     user: UserContext = Depends(get_current_user),
@@ -63,10 +63,26 @@ def search_exercises(
 ):
     """Search / list exercises. All exercises are visible to all users."""
     repo = ExerciseRepository(db)
+    
+    # Convert string parameters to enums if provided
+    muscle_group_enum = None
+    if muscle_group:
+        try:
+            muscle_group_enum = MuscleGroup(muscle_group)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid muscle group: {muscle_group}")
+    
+    difficulty_enum = None
+    if difficulty:
+        try:
+            difficulty_enum = DifficultyLevel(difficulty)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid difficulty level: {difficulty}")
+    
     exercises = repo.search(
         name=name,
-        muscle_group=muscle_group,
-        difficulty=difficulty,
+        muscle_group=muscle_group_enum,
+        difficulty=difficulty_enum,
         offset=offset,
         limit=limit,
     )

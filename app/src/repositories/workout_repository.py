@@ -62,7 +62,7 @@ class WorkoutRepository(BaseRepository[Workout]):
         """Publicly shared workouts."""
         stmt = (
             select(Workout)
-            .where(Workout.is_shared.is_(True))
+            .where(Workout.is_shared == True)
         )
         stmt = self._active_filter(stmt)
         stmt = stmt.order_by(Workout.created_at.desc()).offset(offset).limit(limit)

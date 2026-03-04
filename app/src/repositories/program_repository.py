@@ -66,7 +66,7 @@ class ProgramRepository(BaseRepository[Program]):
     def list_shared(self, *, offset: int = 0, limit: int = 50) -> List[Program]:
         stmt = (
             select(Program)
-            .where(Program.is_shared.is_(True))
+            .where(Program.is_shared == True)
         )
         stmt = self._active_filter(stmt)
         stmt = stmt.order_by(Program.created_at.desc()).offset(offset).limit(limit)
